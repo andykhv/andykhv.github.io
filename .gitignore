@@ -1,0 +1,8 @@
+blog/public/
+blog/resources/_gen/
+blog/assets/jsconfig.json
+blog/hugo_stats.json
+
+
+# Temporary lock file while building
+blog/.hugo_build.lock
