@@ -11,22 +11,23 @@ copyright = "&copy; Copyright 2023, Andy Khov"
     identifier = "about"
     name = "About"
     title = "About"
-    url = "/about/"
+    url = "/about"
     weight = -110
   [[menu.main]]
-    identifier = "categories"
-    name = "Categories"
-    title = "Categories"
-    url = "/categories/"
-    weight = -90
+    identifier = "personal"
+    name = "Personal"
+    title = "Personal"
+    url = "/personal"
+    weight = -110
 
 # Configuration Features
 [params]
   description = "Andy Khov's Blog"
   header_title = "Andy Khov"
-  header_subtitle = "In the never ending cycle of learning"
-  recent_posts = 5
-  mainSections = ["personal"]   # Main sections to include in recent posts
+  home_image = "/avatar.jpg"
+  header_subtitle = ""
+  recent_posts = 10
+  mainSections = ["personal", "tech"]   # Main sections to include in recent posts
   [params.style]                             # CSS style overrides
     backgroundColor = "#f8f9fa"
     homeImageBorderColor = "#ffffff"
@@ -38,3 +39,6 @@ copyright = "&copy; Copyright 2023, Andy Khov"
   [[params.social]]
     fa_icon = "fab fa-linkedin-in fa-1x"
     href = "https://www.linkedin.com/in/andykhov/"
+  [[params.social]]
+    fa_icon = "fab fa-mastodon fa-1x"
+    href = "https://hachyderm.io/@andykhov"
