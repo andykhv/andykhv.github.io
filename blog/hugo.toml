@@ -19,6 +19,13 @@ copyright = "&copy; Copyright 2023, Andy Khov"
     title = "Personal"
     url = "/personal"
     weight = -110
+  [[menu.main]]
+    identifier = "tech"
+    name = "Tech"
+    title = "Tech"
+    url = "/tech"
+    weight = -110
+
 
 # Configuration Features
 [params]
