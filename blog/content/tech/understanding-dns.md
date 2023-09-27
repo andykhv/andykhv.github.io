@@ -5,19 +5,20 @@ draft: true
 ---
 
 # Understanding DNS
-
 This article is definitely not an authoratiative source of the **Domain Name System (DNS)**, but rather a summary of what I've learned when implementing my very own [DNS recursive resolver](https://github.com/andykhv/recursive_resolver).
 
 ## Overview
-From a bird's eye view, DNS is very much of a distributed system of servers that interface through the User Datagram Protocal (UDP).
+From a bird's eye view, DNS is designed to be a hierarchical name space with a distributed architecture.[^1]  There's not one single server that owns all records of every known domain name out there. Instead there are name servers that hold authoritative information 
 
 ### UDP
+
+DNS is a distributed system of name servers that interface through the User Datagram Protocal (UDP).
 
 UDP is a rather minimal transport protocol that operates in layer 4 of the [OSI Model](https://en.wikipedia.org/wiki/OSI_model). DNS doesn't seem to have a need for application layer protocols like HTTP. This would really just increase overhead of parsing DNS messages. With UDP, DNS servers send/receive DNS messages without the need of establishing connections among one another.
 
 There are some caveats with UDP though. Its non-need of a connection doesn't guarantee a strict order of packets received or delivery of the DNS message at the very least. Despite these implications, DNS messages are independent from one another. In other words, each DNS message is an encapsulation of the query and response. UDP is rather a good choice then. The lack of order in UDP doesn't affect the functionality and requirements of DNS.
 
-What if DNS operated via the **Transmission Control Protocol (TCP)** instead of UDP? TCP guarantees a reliable connection between client and server, in which packets are transmitted in an ordered stream. This connection is established after a three-way handshake. Now, if DNS operated solely through TCP, there wouldn't be much of a change in functionality. An ordered stream of DNS messages is a bit overkill, because these DNS messages are independent from another. Hypothetically in comparison to UDP, TCP's three-way handshake would increase the latency for DNS communication. The internet would be a tad bit slower if TCP was the common transport method.
+What if DNS operated via the **Transmission Control Protocol (TCP)** instead of UDP? TCP guarantees a reliable connection between client and server, in which packets are transmitted in an ordered stream. This connection is established after a three-way handshake. Now, if DNS operated solely through TCP, there wouldn't be much of a change in functionality. But an ordered stream of DNS messages is a bit overkill, because these DNS messages are independent from another. Since a single DNS message encapsulates both the query and response, what's the need of TCP for DNS communication? Hypothetically in comparison to UDP, TCP's three-way handshake would increase the latency for DNS communication. But I'm not an expert, I'm sure there are some use cases for utilizing TCP for DNS. 
 
 ## Digging through DNS
 `dig @8.8.8.8 -p 53 +noedns google.com`
