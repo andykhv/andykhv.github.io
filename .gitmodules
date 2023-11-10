@@ -1,1 +1,4 @@
 
+[submodule "blog/themes/devise"]
+	path = blog/themes/devise
+	url = https://github.com/austingebauer/devise.git
