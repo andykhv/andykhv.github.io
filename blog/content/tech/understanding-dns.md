@@ -5,17 +5,15 @@ draft: true
 ---
 
 # Understanding DNS
-This article is definitely not an authoratiative source of the **Domain Name System (DNS)**, but rather a summary of what I've learned when implementing my very own [DNS recursive resolver](https://github.com/andykhv/recursive_resolver).
+This article is rather a summary of what I've learned when implementing my very own [DNS recursive resolver](https://github.com/andykhv/recursive_resolver). Albeit implementation is quite rudimentary and lacks many of the features described in RFC1035[^2]
 
-From a bird's eye view, DNS manages namespaces with a hierarchical structure. These namespaces are provided throughout a distributed system architecture.[^1] There's not one single server that owns all records of every known domain name out there. Instead there are numerous name servers that hold their authoritative information. I hope that from reading this article, we'll understand a bit about host address resolution from DNS.
+From a bird's eye view, DNS manages namespaces with a hierarchical structure. These namespaces are provided throughout a distributed system architecture.[^1] There's not one single server that owns all records of every known domain and sub-domain out there. Instead there are numerous name servers that hold their individual authoritative information. I hope that from reading this article, we'll understand a bit more about DNS and its host address resolution.
 
 ### UDP
 
-DNS interfaces through the User Datagram Protocal (UDP). UDP is a rather minimal transport protocol that operates in layer 4 of the [OSI Model](https://en.wikipedia.org/wiki/OSI_model). DNS doesn't seem to have a need for application layer protocols like HTTP. This would really just increase overhead of parsing DNS messages. With UDP, DNS servers send/receive DNS messages without the need of establishing connections among one another.
+DNS interfaces through the User Datagram Protocal (UDP).[^1] UDP is a rather minimal transport protocol that operates in layer 4 of the [OSI Model](https://en.wikipedia.org/wiki/OSI_model). With UDP, DNS servers send/receive DNS messages without the need of establishing connections among one another.
 
-There are some caveats with UDP though. Its non-need of a connection doesn't guarantee a strict order of packets received or delivery of the DNS message at the very least. Despite these implications, DNS messages are independent from one another. In other words, each DNS message is an encapsulation of the query and response. UDP is rather a good choice then. The lack of order in UDP doesn't affect the functionality and requirements of DNS.
-
-Another caveat is the packet size limit of 512MB.[^5] So, does this mean DNS packets are limited to 512MB? Even with truncation, there will be scenarios where a DNS packet's size is greather than 512MB. If this scenario occurs, DNS servers establish a TCP connection instead. The connection is established after a three-way handshake. TCP guarantees a reliable connection between client and server, in which packets are transmitted in an ordered stream. With this transport protocol, a DNS response can be sent through multiple packets through an ordered stream to the requesting client.
+There are some caveats with UDP though. Its non-need of a connection doesn't guarantee a strict order of packets received or delivery of the DNS message at the very least. Despite these implications, DNS messages are independent from one another, so order isn't needed at all. Each DNS message is an encapsulation of a query and response. UDP is rather a good choice then. The lack of order in UDP doesn't necessarily affect the functionality of DNS address resolution. Well, there is one caveat; DNS messages over UDP were originally limited to 512mb. There are some RFCs that explain solutions to resolve this issue. Such as DNS over TLS[^] and EDNS[^3], but we're focused mainly on **RFC1034**[^1] and **RFC1035**[^2] here.
 
 ## Digging through DNS
 
@@ -26,14 +24,14 @@ Let's start with figuring out the host address for *google.com*! Luckily MacOS c
 We are using the **dig** utility to send a DNS packet to address *8.8.8.8:53* to resolve *google.com* for its host address. *8.8.8.8* is google's IPv4 address for their DNS server. We use port 53 because this is the designated port for DNS servers.[^2] **Extension DNS** is out of scope for this article, since it is used to extend the size of several parameters in the DNS packet.[^3] Hence we set the `+noedns` flag.
 
 After entering the above command, we get this truncated response:
->->>HEADER<<- opcode: QUERY, status: NOERROR, id: 6741
->flags: qr rd ra; QUERY: 1, ANSWER: 1, AUTHORITY: 0, ADDITIONAL: 0 
->
->;; QUESTION SECTION:
->;google.com.			IN	A
->
->;; ANSWER SECTION:
->google.com.		257	IN	A	142.250.189.14
+```
+  ->>HEADER<<- opcode: QUERY, status: NOERROR, id: 6741
+  flags: qr rd ra; QUERY: 1, ANSWER: 1, AUTHORITY: 0, ADDITIONAL: 0 
+  ;; QUESTION SECTION:
+  ;google.com.			IN	A
+  ;; ANSWER SECTION:
+  google.com.		257	IN	A	142.250.189.14
+```
 
 Let's slowly digest this response. This response can be broken down into three parts:
 1. Header
@@ -41,8 +39,10 @@ Let's slowly digest this response. This response can be broken down into three p
 3. Answers
 
 ### Header
->->>HEADER<<- opcode: QUERY, status: NOERROR, id: 6741
->flags: qr rd ra; QUERY: 1, ANSWER: 1, AUTHORITY: 0, ADDITIONAL: 0 
+```
+  ->>HEADER<<- opcode: QUERY, status: NOERROR, id: 6741
+  flags: qr rd ra; QUERY: 1, ANSWER: 1, AUTHORITY: 0, ADDITIONAL: 0 
+```
 
 The header of a DNS message contains data about the overall message. For this instance, the header states: 
 - `opcode: QUERY`, the DNS message is a standard query for a domain name.
@@ -56,8 +56,10 @@ The header of a DNS message contains data about the overall message. For this in
 - `ANSWER: 1`, there is one record in the **ANSWER** section.
 
 ### Questions 
->;; QUESTION SECTION:
->;google.com.			IN	A
+```
+  ;; QUESTION SECTION:
+  ;google.com.			IN	A
+```
 
 This section of the message is rather simple. We have one question record to detail our query for *google.com*.
 
@@ -68,8 +70,10 @@ This section of the message is rather simple. We have one question record to det
 Overall, this question record is a query for the internet host address of *google.com*.
 
 ### Answers 
->;; ANSWER SECTION:
->google.com.		257	IN	A	142.250.189.14
+```
+  ;; ANSWER SECTION:
+  google.com.		257	IN	A	142.250.189.14
+```
 
 The answer section contains one answer record for the query for *google.com*. This record conveys **142.250.189.14** is the IPv4 host address for *google.com*. The Time-To-Live (TTL) is also conveyed in the record -- **257** seconds. Meaning, the name server that owns this resource record will refresh the information in 257 seconds.
 
@@ -82,52 +86,42 @@ So, what was *8.8.8.8* really doing? From my own understanding, it was resolving
 Example query to a root server: `dig @a.root-servers.net +noedns google.com`
 
 Truncated response:
->;; Truncated, retrying in TCP mode.
->
->;; ->>HEADER<<- opcode: QUERY, status: NOERROR, id: 13422
->;; flags: qr; QUERY: 1, ANSWER: 0, AUTHORITY: 13, ADDITIONAL: 26
->
->;; QUESTION SECTION:
->
->;google.com.			IN	A
->
->;; AUTHORITY SECTION:
->
->com.			172800	IN	NS	e.gtld-servers.net.
->
->com.			172800	IN	NS	b.gtld-servers.net.
->
->;; ADDITIONAL SECTION:
->
->e.gtld-servers.net.	172800	IN	A	192.12.94.30
->
->e.gtld-servers.net.	172800	IN	AAAA	2001:502:1ca1::30
->
->b.gtld-servers.net.	172800	IN	A	192.33.14.30
->
->b.gtld-servers.net.	172800	IN	AAAA	2001:503:231d::2:30
->
->;; MSG SIZE  rcvd: 824
+```
+  ;; Truncated, retrying in TCP mode.
+  ;; ->>HEADER<<- opcode: QUERY, status: NOERROR, id: 13422
+  ;; flags: qr; QUERY: 1, ANSWER: 0, AUTHORITY: 13, ADDITIONAL: 26
+  ;; QUESTION SECTION:
+  ;google.com.			IN	A
+  ;; AUTHORITY SECTION:
+  com.			172800	IN	NS	e.gtld-servers.net.
+  com.			172800	IN	NS	b.gtld-servers.net.
+  ;; ADDITIONAL SECTION:
+  e.gtld-servers.net.	172800	IN	A	192.12.94.30
+  e.gtld-servers.net.	172800	IN	AAAA	2001:502:1ca1::30
+  b.gtld-servers.net.	172800	IN	A	192.33.14.30
+  b.gtld-servers.net.	172800	IN	AAAA	2001:503:231d::2:30
+;; MSG SIZE  rcvd: 824
+```
 
-The first thing to notice from the response is dig retried the query with a TCP connection instead. This is due to the response size being 824MB. As mentioned previously, the maximum packet size in UDP is 512MB.
+The first thing to notice from the response is dig retried the query with a TCP connection instead. This is due to the response size being 824MB. As mentioned previously, the maximum packet size in UDP is 512mb.
 
 Comparatively to the response we received from *8.8.8.8*, there is no Answer section. Instead, there are 26 Additional resource records to accompany the 13 Authority resource records. The response shown is truncated. The Authority section contains records of Name Servers pertaining to the *com* domain. In other words *e.gtld-servers.net* and *b.gtld-servers.net* are name servers that contain records of domains that end with *com*, such as *google.com*. The additional section describes the **IPv4 (A)** and **IPv6 (AAAA)** addresses of the name servers.
 
 Querying *e.gtld-servers.net* with `dig @e.gtld-servers.net +noedns +norecurse google.com`. This is the truncated response:
->;; AUTHORITY SECTION:
->
->google.com.		172800	IN	NS	ns2.google.com.
->
->;; MSG SIZE  rcvd: 276
+```
+  ;; AUTHORITY SECTION:
+  google.com.		172800	IN	NS	ns2.google.com.
+  ;; MSG SIZE  rcvd: 276
+```
 
 We received a resource record indicating that *ns2.google.com* is a Name Server that holds sub-domain information for *google.com*. Let's query this server next: `dig @ns2.google.com +noedns +norecurse google.com`. This is the truncated response:
 
->;; ->>HEADER<<- opcode: QUERY, status: NOERROR, id: 46238
->;; flags: qr aa; QUERY: 1, ANSWER: 1, AUTHORITY: 0, ADDITIONAL: 0
->
->;; ANSWER SECTION:
->
->google.com.		300	IN	A	142.250.176.14
+```
+  ;; ->>HEADER<<- opcode: QUERY, status: NOERROR, id: 46238
+  ;; flags: qr aa; QUERY: 1, ANSWER: 1, AUTHORITY: 0, ADDITIONAL: 0
+  ;; ANSWER SECTION:
+  google.com.		300	IN	A	142.250.176.14
+```
 
 We finally received an Answer resource record! At the time of this query, *google.com* is mapped to *142.250.176.14*. This address is most likely some sort of proxy or gateway into their search engine service! Resolving *google.com* took 3 queries to complete. A query to a root server, *com* server, and finally a *google.com* server.
 
@@ -136,8 +130,9 @@ After resolving *google.com*, the concept of a hierarchical and distributed desi
 
 It was also quite fun to implement a recursive resolver in Rust!
 
-[^1]: [RFC 1034](https://www.ietf.org/rfc/rfc1034.txt)
-[^2]: [RFC 1035](https://www.ietf.org/rfc/rfc1035.txt)
-[^3]: [RFC 2671](https://www.ietf.org/rfc/rfc2671.txt)
+[^1]: [RFC 1034: DNS Concepts](https://www.ietf.org/rfc/rfc1034.txt)
+[^2]: [RFC 1035: DNS Specification](https://www.ietf.org/rfc/rfc1035.txt)
+[^3]: [RFC 2671: Extensions for DNS](https://www.ietf.org/rfc/rfc2671.txt)
 [^4]: [Root Servers](https://root-servers.org/)
 [^5]: [Microsoft Docs on UDP and TCP](https://learn.microsoft.com/en-us/troubleshoot/windows-server/networking/dns-works-on-tcp-and-udp)
+[^6]: [RFC7858: DNS over TLS](https://www.ietf.org/rfc/rfc7858.txt)
