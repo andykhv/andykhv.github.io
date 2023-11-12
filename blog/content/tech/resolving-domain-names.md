@@ -1,7 +1,7 @@
 ---
 title: "Resolving Domain Names"
-date: 2023-09-16T23:03:19-07:00
-draft: true
+date: 2023-11-11T12:00:00-07:00
+draft: false
 ---
 
 # Resolving Domain Names
@@ -13,7 +13,7 @@ From a bird's eye view, DNS manages namespaces with a hierarchical structure. Th
 
 DNS interfaces through the User Datagram Protocal (UDP).[^1] UDP is a rather minimal transport protocol that operates in layer 4 of the [OSI Model](https://en.wikipedia.org/wiki/OSI_model). With UDP, DNS servers send/receive DNS messages without the need of establishing connections among one another.
 
-There are some caveats with UDP though. Its non-need of a connection doesn't guarantee a strict order of packets received or delivery of the DNS message at the very least. Despite these implications, DNS messages are independent from one another, so order isn't needed at all. Each DNS message is an encapsulation of a query and response. UDP is rather a good choice then. The lack of order in UDP doesn't necessarily affect the functionality of DNS address resolution. Well, there is one caveat; DNS messages over UDP were originally limited to 512mb. There are some RFCs that explain solutions to resolve this issue. Such as DNS over TLS[^] and EDNS[^3], but we're focused mainly on **RFC1034**[^1] and **RFC1035**[^2] here.
+There are some caveats with UDP though. Its non-need of a connection doesn't guarantee a strict order of packets received or delivery of the DNS message at the very least. Despite these implications, DNS messages are independent from one another, so order isn't needed at all. Each DNS message is an encapsulation of a query and response. UDP is rather a good choice then. The lack of order in UDP doesn't necessarily affect the functionality of DNS address resolution. Well, there is one caveat; DNS messages over UDP were originally limited to 512mb. There are some RFCs that explain solutions to resolve this issue. Such as DNS over TLS[^6] and EDNS[^3], but we're focused mainly on **RFC1034**[^1] and **RFC1035**[^2] here.
 
 ## Digging through DNS
 
@@ -143,3 +143,4 @@ It was also quite fun to implement a recursive resolver in Rust! Check out my [r
 [^3]: [RFC 2671: Extensions for DNS](https://www.ietf.org/rfc/rfc2671.txt)
 [^4]: [RFC 7858: DNS over TCP](https://www.ietf.org/rfc/rfc7766.txt)
 [^5]: [Root Servers](https://root-servers.org/)
+[^6]: [TCP](https://en.wikipedia.org/wiki/Transmission_Control_Protocol)
